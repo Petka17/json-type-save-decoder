@@ -1,0 +1,36 @@
+{
+  "name": "elm-style-decoder",
+  "version": "0.0.1",
+  "description": "Elm-style decoder implemented in typescript",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Petka17/elm-style-decoder.git"
+  },
+  "keywords": [
+    "decode"
+  ],
+  "author": "Petr Klimenko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Petka17/elm-style-decoder/issues"
+  },
+  "homepage": "https://github.com/Petka17/elm-style-decoder#readme",
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.16",
+    "@types/node": "^12.6.8",
+    "@typescript-eslint/eslint-plugin": "^1.13.0",
+    "@typescript-eslint/parser": "^1.13.0",
+    "eslint": "^6.1.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "jest": "^24.8.0",
+    "prettier": "^1.18.2",
+    "ts-jest": "^24.0.2",
+    "ts-node": "^8.3.0",
+    "typescript": "^3.5.3"
+  }
+}
