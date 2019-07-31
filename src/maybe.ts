@@ -1,50 +1,55 @@
-//--- TYPE and CONSTRUCTORS ---
-export type Maybe<A> = Just<A> | Nothing;
+//--- TYPE and CONSTRUCTORS
+export type Maybe<A> = Just<A> | Nothing<A>;
 
-class Just<A> {
+interface IMaybe<A> {
+  kind: "just" | "nothing";
+  map<B>(fn: (_: A) => B): Maybe<B>;
+  flatMap<B>(fn: (_: A) => Maybe<B>): Maybe<B>;
+  withDefault(_: A): A;
+}
+
+class Just<A> implements IMaybe<A> {
   public readonly kind = "just";
 
-  constructor(private value: A) {}
+  public constructor(private value: A) {}
 
   public getValue(): A {
     return this.value;
   }
+
+  public map<B>(fn: (_: A) => B): Maybe<B> {
+    return just(fn(this.value));
+  }
+
+  public flatMap<B>(fn: (_: A) => Maybe<B>): Maybe<B> {
+    return fn(this.value);
+  }
+
+  public withDefault(_: A): A {
+    return this.getValue();
+  }
 }
 
-class Nothing {
+class Nothing<A> implements IMaybe<A> {
   public readonly kind = "nothing";
+
+  public map<B>(_: (_: A) => B): Maybe<B> {
+    return nothing();
+  }
+
+  public flatMap<B>(_: (_: A) => Maybe<B>): Maybe<B> {
+    return nothing();
+  }
+
+  public withDefault(defaultValue: A): A {
+    return defaultValue;
+  }
 }
 
 //--- HELPER FUNCTIONS ---
 export const just = <A>(value: A): Maybe<A> => new Just<A>(value);
 export const nothing = <A>(): Maybe<A> => new Nothing();
 
-//--- MAPPING ---
-export const map = <A, B>(fn: (_: A) => B, maybe: Maybe<A>): Maybe<B> => {
-  switch (maybe.kind) {
-    case "just":
-      return new Just(fn(maybe.getValue()));
-
-    case "nothing":
-      return maybe;
-  }
-};
-
-export const andThen = <A, B>(
-  fn: (_: A) => Maybe<B>,
-  maybe: Maybe<A>
-): Maybe<B> => {
-  if (maybe instanceof Just) {
-    return fn(maybe.getValue());
-  }
-
-  return maybe;
-};
-
-//--- FOLDING ---
-export const withDefault = <A>(defaultValue: A, maybe: Maybe<A>): A =>
-  maybe.kind === "just" ? maybe.getValue() : defaultValue;
-
-//--- Utilities ---
-export const fromNullable = <A>(x: A): Maybe<A> =>
+//--- UTILITIES ---
+export const fromNullable = <A>(x: A | null): Maybe<A> =>
   x === null ? nothing() : just(x);

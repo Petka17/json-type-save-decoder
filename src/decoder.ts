@@ -1,196 +1,168 @@
-import * as _ from "ramda";
+import * as Result from "./result";
 
-import { err, ok, Result } from "./result";
-import * as R from "./result";
-
-type DecoderFn<A> = (thing: any) => Result<string, A>;
+type DecoderFn<A> = (thing: any) => Result.Result<string, A>;
 
 export class Decoder<A> {
-  constructor(private fn: DecoderFn<A>) {}
+  public constructor(private fn: DecoderFn<A>) {}
 
-  public assign<K extends string, B>(
-    key: K,
-    other: Decoder<B> | ((a: A) => Decoder<B>)
-  ): Decoder<A & { [k in K]: B }> {
-    return andThen(
-      a =>
-        map(
-          b => ({
-            ...Object(a),
-            [key.toString()]: b
-          }),
-          other instanceof Decoder ? other : other(a)
-        ),
-      this
+  public decode(value: any): Result.Result<string, A> {
+    return this.fn(value);
+  }
+
+  public map<B>(fn: (_: A) => B): Decoder<B> {
+    return new Decoder<B>(
+      (value: any): Result.Result<string, B> => this.decode(value).map(fn)
     );
   }
 
-  public decode(value: any) {
-    return this.fn(value);
+  public flatMap<B>(fn: (_: A) => Decoder<B>): Decoder<B> {
+    return new Decoder<B>(
+      (value: any): Result.Result<string, B> =>
+        this.decode(value).flatMap(
+          (decoded: A): Result.Result<string, B> => fn(decoded).decode(value)
+        )
+    );
+  }
+
+  public assign<B>(
+    key: string,
+    other: Decoder<B>
+  ): Decoder<A & { [key in string]: B }> {
+    type ResultObject = A & { [key in string]: B };
+
+    return this.flatMap(
+      (decoded: A): Decoder<ResultObject> =>
+        other.map(
+          (b: B): ResultObject => ({
+            ...decoded,
+            [key]: b
+          })
+        )
+    );
   }
 }
 
-//--- Mapping ---
-export const map = <A, B>(fn: (_: A) => B, decoder: Decoder<A>): Decoder<B> =>
-  new Decoder(
-    (value: any): Result<string, B> => R.map(fn, decoder.decode(value))
-  );
+//--- BASE CASES ---
+export const succeed = <A>(value: A): Decoder<A> =>
+  new Decoder((_): Result.Result<string, A> => Result.ok(value));
 
-export const andThen = <A, B>(
-  fn: (_: A) => Decoder<B>,
-  decoder: Decoder<A>
-): Decoder<B> =>
-  new Decoder(
-    (value: any): Result<string, B> =>
-      R.andThen(a => fn(a).decode(value), decoder.decode(value))
-  );
-
-//--- COMBINE ---
-export const assign = <K extends string, B, A>(
-  key: K,
-  other: Decoder<B> | ((a: A) => Decoder<B>)
-) => (decoder: Decoder<A>): Decoder<A & { [k in K]: B }> => {
-  return andThen(
-    a =>
-      map(
-        b => ({
-          ...Object(a),
-          [key.toString()]: b
-        }),
-        other instanceof Decoder ? other : other(a)
-      ),
-    decoder
-  );
-};
+export const fail = <A>(message: string): Decoder<A> =>
+  new Decoder((_): Result.Result<string, A> => Result.err(message));
 
 //--- PRIMITIVES ---
 export const string: Decoder<string> = new Decoder(
-  (value: any): Result<string, string> => {
-    if (typeof value === "string") return R.ok(value);
+  (value: any): Result.Result<string, string> => {
+    if (typeof value === "string") return Result.ok(value);
 
-    return R.err(getErrorMessage("string", value));
+    return Result.err(getErrorMessage("string", value));
+  }
+);
+
+export const number: Decoder<number> = new Decoder(
+  (value: any): Result.Result<string, number> => {
+    if (typeof value === "number") return Result.ok(value);
+
+    return Result.err(getErrorMessage("number", value));
   }
 );
 
 export const boolean: Decoder<boolean> = new Decoder(
-  (value: any): Result<string, boolean> => {
-    if (typeof value === "boolean") return R.ok(value);
+  (value: any): Result.Result<string, boolean> => {
+    if (typeof value === "boolean") return Result.ok(value);
 
-    return R.err(getErrorMessage("boolean", value));
+    return Result.err(getErrorMessage("boolean", value));
   }
 );
 // TODO: Add booleanExt: "true"/"false", "Y"/"N", 0/1...
-
-export const number: Decoder<number> = new Decoder(
-  (value: any): Result<string, number> => {
-    if (typeof value === "number") return R.ok(value);
-
-    return R.err(getErrorMessage("number", value));
-  }
-);
 // TODO: Date decoder
 
-//--- DATA STRUCTURES ---
-// nullable : Decoder a -> Decoder (Maybe a)
-// array : Decoder a -> Decoder (Array a)
-export const array = <A>(decoder: Decoder<A>): Decoder<A[]> =>
-  new Decoder(value => {
-    if (!(value instanceof Array)) {
-      return err(getErrorMessage("array", value));
-    }
-
-    let result: Result<string, A[]> = ok([]);
-    let item: Result<string, A>;
-
-    for (let i = 0; i < value.length; i++) {
-      // item = decodeAny(decoder, value[i])
-      // if (item.kind === "err") {
-      // }
-      // result = R.map(list => list.concat(item))
-    }
-
-    return result;
-  });
-
-// dict : Decoder a -> Decoder (Dict String a)
-// keyValuePairs : Decoder a -> Decoder (List ( String, a ))
-// oneOrMore : (a -> List a -> value) -> Decoder a -> Decoder value
-
-//--- OBJECT PRIMITIVES ---
-// field : String -> Decoder a -> Decoder a
+//--- ARRAY and OBJECT PRIMITIVES ---
 export const field = <A>(fieldName: string, decoder: Decoder<A>): Decoder<A> =>
-  new Decoder(value => {
-    Object.hasOwnProperty(fieldName);
-    let v: any;
+  new Decoder(
+    (value: Record<string, any>): Result.Result<string, A> =>
+      decoder.decode(value[fieldName])
+  );
 
-    try {
-      v = value[fieldName];
-    } catch (e) {
-      return err(`Can't get value of the field: ${e.message}`);
+export const index = <A>(index: number, decoder: Decoder<A>): Decoder<A> =>
+  new Decoder(
+    (value: Record<string, any>): Result.Result<string, A> =>
+      decoder.decode(value[index])
+  );
+
+type stringOrNumber = string | number;
+export const at = <A>(
+  keys: stringOrNumber[],
+  decoder: Decoder<A>
+): Decoder<A> =>
+  new Decoder(
+    (value: any): Result.Result<string, A> => {
+      const valueAtPath: Result.Result<string, any> = Result.tryCatch((): any =>
+        keys.reduce((acc: any, key: stringOrNumber): any => acc[key], value)
+      );
+
+      return valueAtPath.kind === "ok"
+        ? decoder.decode(valueAtPath.getValue())
+        : Result.err(
+            `Not existed path ${keys} in ${stringify(
+              value
+            )}.\n${valueAtPath.getError()}`
+          );
     }
+  );
 
-    return decoder.decode(v);
-  });
-// at : List String -> Decoder a -> Decoder a
-// index : Int -> Decoder a -> Decoder a
+//--- DATA STRUCTURES ---
+export const array = <A>(decoder: Decoder<A>): Decoder<A[]> =>
+  new Decoder(
+    (value: any): Result.Result<string, A[]> => {
+      if (!(value instanceof Array)) {
+        return Result.err(getErrorMessage("array", value));
+      }
+
+      let result: Result.Result<string, A[]> = Result.ok([]);
+      let item: Result.Result<string, A>;
+
+      for (let i = 0; i < value.length; i++) {
+        item = decoder.decode(value[i]);
+
+        if (item.kind === "ok") {
+          const v = item.getValue();
+          result = result.map((list: A[]): A[] => list.concat(v));
+        } else {
+          return Result.err(item.getError());
+        }
+      }
+
+      return result;
+    }
+  );
 
 //--- INCONSISTENT STRUCTURES ---
-// maybe : Decoder a -> Decoder (Maybe a)
 // oneOf : List (Decoder a) -> Decoder a
-
-//--- RUN DECODERS ---
-export const decodeAny = <A>(
-  decoder: Decoder<A>,
-  value: any
-): Result<string, A> => {
-  return decoder.decode(value);
-};
-
-//--- Folding ---
-export const succeed = <A>(value: A) => new Decoder(_ => R.ok(value));
-export const fail = <A>(message: string): Decoder<A> =>
-  new Decoder(_ => R.err(message));
+// maybe : Decoder a -> Decoder (Maybe a)
 
 /**
  * Utilities
  */
 
-const getErrorMessage = (expected: string, value: any) =>
-  `I expected to find a ${expected} but instead I found ${stringify(value)}`;
+export const getErrorMessage = (expected: string, value: any): string =>
+  `I expected to find a **${expected.toUpperCase()}** but instead I found ${stringify(
+    value
+  )}`;
 
-const stringify = (value: any): string =>
-  JSON.stringify(value, cyclicalReferenceReplacer());
+const stringify = (value: any): string => JSON.stringify(value, null); // cyclicalReferenceReplacer());
 
-/*
- * Based on this code: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Cyclic_object_value
- */
-const cyclicalReferenceReplacer = () => {
-  const seen = new WeakSet();
-  return (_: string, value: any) => {
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) {
-        return "[Cyclical Reference]";
-      }
-      seen.add(value);
-    }
-    return value;
-  };
-};
-
-//---------------------------------
-console.log(decodeAny(field("x", number), undefined));
-console.log(
-  decodeAny(
-    succeed({})
-      .assign("t", field("x", number))
-      .assign("h", field("y", boolean)),
-    { x: 5, y: true }
-  )
-);
-
-const dd = _.compose(
-  assign("t", field("x", number)),
-  assign("h", field("y", boolean))
-);
-console.log(dd.decode({ x: 5, y: true }));
-// console.log(ok("r"));
+// /*
+//  * Based on this code: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Cyclic_object_value
+//  */
+// const cyclicalReferenceReplacer = (): any => {
+//   const seen = new WeakSet();
+//   return (_: string, value: any): string => {
+//     if (typeof value === "object" && value !== null) {
+//       if (seen.has(value)) {
+//         return "[Cyclical Reference]";
+//       }
+//       seen.add(value);
+//     }
+//     return value;
+//   };
+// };
