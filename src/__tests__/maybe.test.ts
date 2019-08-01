@@ -1,7 +1,7 @@
-import * as Maybe from "../maybe";
+import { Maybe, just, nothing, fromNullable } from "../maybe";
 
 test("create maybe-just", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.just(5);
+  const maybe: Maybe<number> = just(5);
 
   if (maybe.kind === "nothing") {
     done.fail("Expected Just(5), instead received Nothing");
@@ -13,7 +13,7 @@ test("create maybe-just", (done): void => {
 });
 
 test("create maybe-nothing", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.nothing();
+  const maybe: Maybe<number> = nothing();
 
   if (maybe.kind === "just") {
     done.fail(`Expected Nothing, instead received Just(${maybe.getValue()})`);
@@ -23,7 +23,7 @@ test("create maybe-nothing", (done): void => {
 });
 
 test("mapping just", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.just("Test").map(
+  const maybe: Maybe<number> = just("Test").map(
     (x: string): number => x.length
   );
 
@@ -37,7 +37,7 @@ test("mapping just", (done): void => {
 });
 
 test("mapping nothing", (done): void => {
-  const maybe = Maybe.nothing<string>().map((x: string): number => x.length);
+  const maybe = nothing<string>().map((x: string): number => x.length);
 
   if (maybe.kind === "just") {
     done.fail(`Expected Nothing, instead received Just(${maybe.getValue()})`);
@@ -47,8 +47,8 @@ test("mapping nothing", (done): void => {
 });
 
 test("flat mapping just", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.just("Test").flatMap(
-    (x: string): Maybe.Maybe<number> => Maybe.just(x.length)
+  const maybe: Maybe<number> = just("Test").flatMap(
+    (x: string): Maybe<number> => just(x.length)
   );
 
   if (maybe.kind === "nothing") {
@@ -61,8 +61,8 @@ test("flat mapping just", (done): void => {
 });
 
 test("flat mapping nothing", (done): void => {
-  const maybe = Maybe.nothing<string>().flatMap(
-    (x: string): Maybe.Maybe<number> => Maybe.just(x.length)
+  const maybe = nothing<string>().flatMap(
+    (x: string): Maybe<number> => just(x.length)
   );
 
   if (maybe.kind === "just") {
@@ -73,7 +73,7 @@ test("flat mapping nothing", (done): void => {
 });
 
 test("withDefault just", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.just(5);
+  const maybe: Maybe<number> = just(5);
 
   if (maybe.kind === "nothing") {
     done.fail("Expected Just(4), instead received Nothing");
@@ -85,7 +85,7 @@ test("withDefault just", (done): void => {
 });
 
 test("withDefault nothing", (done): void => {
-  const maybe = Maybe.nothing<number>();
+  const maybe = nothing<number>();
 
   if (maybe.kind === "just") {
     done.fail(`Expected Nothing, instead received Just(${maybe.getValue()})`);
@@ -97,7 +97,7 @@ test("withDefault nothing", (done): void => {
 });
 
 test("fromNullable", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.fromNullable(5);
+  const maybe: Maybe<number> = fromNullable(5);
 
   if (maybe.kind === "nothing") {
     done.fail("Expected Just(5), instead received Nothing");
@@ -109,7 +109,7 @@ test("fromNullable", (done): void => {
 });
 
 test("fromNullable null", (done): void => {
-  const maybe: Maybe.Maybe<number> = Maybe.fromNullable<number>(null);
+  const maybe: Maybe<number> = fromNullable<number>(null);
 
   if (maybe.kind === "just") {
     done.fail(`Expected Nothing, instead received Just(${maybe.getValue()})`);

@@ -1,7 +1,7 @@
-import * as Result from "../result";
+import { Result, ok, err } from "../result";
 
 test("create result-ok", (done): void => {
-  const result: Result.Result<any, number> = Result.ok(5);
+  const result: Result<any, number> = ok(5);
 
   if (result.kind === "err") {
     done.fail(`Expected Ok(5), instead received Err(${result.getError()})`);
@@ -14,7 +14,7 @@ test("create result-ok", (done): void => {
 
 test("create result-err", (done): void => {
   const msg = "some error";
-  const result: Result.Result<string, any> = Result.err(msg);
+  const result: Result<string, any> = err(msg);
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);
@@ -26,9 +26,7 @@ test("create result-err", (done): void => {
 });
 
 test("map result-ok", (done): void => {
-  const result: Result.Result<any, number> = Result.ok(4).map(
-    (x): number => x + 1
-  );
+  const result: Result<any, number> = ok(4).map((x): number => x + 1);
 
   if (result.kind === "err") {
     done.fail(`Expected Ok(5), instead received Err(${result.getError()})`);
@@ -41,9 +39,9 @@ test("map result-ok", (done): void => {
 
 test("map result-err", (done): void => {
   const msg = "some error";
-  const result: Result.Result<string, number> = Result.err<string, number>(
-    msg
-  ).map((x): number => x + 1);
+  const result: Result<string, number> = err<string, number>(msg).map(
+    (x): number => x + 1
+  );
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);
@@ -55,9 +53,9 @@ test("map result-err", (done): void => {
 });
 
 test("mapError result-ok", (done): void => {
-  const result: Result.Result<string, number> = Result.ok<string, number>(
-    5
-  ).mapError((err: string): string => err.toUpperCase());
+  const result: Result<string, number> = ok<string, number>(5).mapError(
+    (err: string): string => err.toUpperCase()
+  );
 
   if (result.kind === "err") {
     done.fail(`Expected Ok(5), instead received Err(${result.getError()})`);
@@ -70,9 +68,9 @@ test("mapError result-ok", (done): void => {
 
 test("mapError result-err", (done): void => {
   const msg = "some error";
-  const result: Result.Result<string, number> = Result.err<string, number>(
-    msg
-  ).mapError((err: string): string => err.toUpperCase());
+  const result: Result<string, number> = err<string, number>(msg).mapError(
+    (err: string): string => err.toUpperCase()
+  );
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);
@@ -84,8 +82,8 @@ test("mapError result-err", (done): void => {
 });
 
 test("flatMap result-ok", (done): void => {
-  const result: Result.Result<any, number> = Result.ok(4).flatMap(
-    (x): Result.Result<string, number> => Result.ok(x + 1)
+  const result: Result<any, number> = ok(4).flatMap(
+    (x): Result<string, number> => ok(x + 1)
   );
 
   if (result.kind === "err") {
@@ -99,9 +97,9 @@ test("flatMap result-ok", (done): void => {
 
 test("flatMap result-err", (done): void => {
   const msg = "some error";
-  const result: Result.Result<string, number> = Result.err<string, number>(
-    msg
-  ).flatMap((x): Result.Result<string, number> => Result.ok(x + 1));
+  const result: Result<string, number> = err<string, number>(msg).flatMap(
+    (x): Result<string, number> => ok(x + 1)
+  );
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);
@@ -113,10 +111,9 @@ test("flatMap result-err", (done): void => {
 });
 
 test("apply result-ok", (done): void => {
-  const result: Result.Result<any, number> = Result.ok<
-    any,
-    (_: number) => number
-  >((x: number): number => x + 1).ap(Result.ok(4));
+  const result: Result<any, number> = ok<any, (_: number) => number>(
+    (x: number): number => x + 1
+  ).ap(ok(4));
 
   if (result.kind === "err") {
     done.fail(`Expected Ok(5), instead received Err(${result.getError()})`);
@@ -129,7 +126,7 @@ test("apply result-ok", (done): void => {
 
 test("apply not a function result-ok", (done): void => {
   try {
-    Result.ok<any, number>(1).ap(Result.ok("1"));
+    ok<any, number>(1).ap(ok("1"));
   } catch (e) {
     expect(e.message).toEqual("'ap' can only be applied to functions");
   }
@@ -139,10 +136,9 @@ test("apply not a function result-ok", (done): void => {
 
 test("apply error to result-ok", (done): void => {
   const msg = "some error";
-  const result: Result.Result<any, number> = Result.ok<
-    any,
-    (_: number) => number
-  >((x: number): number => x + 1).ap(Result.err(msg));
+  const result: Result<any, number> = ok<any, (_: number) => number>(
+    (x: number): number => x + 1
+  ).ap(err(msg));
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);
@@ -155,10 +151,9 @@ test("apply error to result-ok", (done): void => {
 
 test("apply result-err", (done): void => {
   const msg = "some error";
-  const result: Result.Result<any, number> = Result.err<
-    string,
-    (_: number) => number
-  >(msg).ap(Result.ok("1"));
+  const result: Result<any, number> = err<string, (_: number) => number>(
+    msg
+  ).ap(ok("1"));
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);
@@ -170,7 +165,7 @@ test("apply result-err", (done): void => {
 });
 
 test("withDeafult result-ok", (done): void => {
-  const result: Result.Result<any, number> = Result.ok(5);
+  const result: Result<any, number> = ok(5);
 
   if (result.kind === "err") {
     done.fail(`Expected Ok(5), instead received Err(${result.getError()})`);
@@ -183,7 +178,7 @@ test("withDeafult result-ok", (done): void => {
 
 test("withDeafult result-err", (done): void => {
   const msg = "some error";
-  const result: Result.Result<string, number> = Result.err<string, number>(msg);
+  const result: Result<string, number> = err<string, number>(msg);
 
   if (result.kind === "ok") {
     done.fail(`Expected Err(msg), received Ok(${result.getValue()})`);

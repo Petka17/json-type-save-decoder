@@ -1,26 +1,26 @@
-import * as _ from "../decoder";
+import { Decoder, getErrorMessage } from "../decoder";
 
 describe("Base case", (): void => {
-  test("Base case: succeed", (done): void => {
-    const res = _.succeed({}).decode({ x: 5 });
+  test("succeed", (done): void => {
+    const result = Decoder.succeed({}).decode({ x: 5 });
 
-    if (res.kind === "err") {
-      done.fail(`Expected Ok({}), instead got Err(${res.getError()}`);
+    if (result.kind === "err") {
+      done.fail(`Expected Ok({}), instead got Err(${result.getError()}`);
     } else {
-      expect(res.getValue()).toEqual({});
+      expect(result.getValue()).toEqual({});
     }
 
     done();
   });
 
-  test("Base case: fail", (done): void => {
+  test("fail", (done): void => {
     const msg = "Never decoded";
-    const res = _.fail(msg).decode({ x: 5 });
+    const result = Decoder.fail(msg).decode({ x: 5 });
 
-    if (res.kind == "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind == "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(msg);
+      expect(result.getError()).toEqual(msg);
     }
 
     done();
@@ -30,12 +30,12 @@ describe("Base case", (): void => {
 describe("Primitives", (): void => {
   test("string", (done): void => {
     const str = "Some random string";
-    const res = _.string.decode(str);
+    const result = Decoder.string.decode(str);
 
-    if (res.kind == "err") {
-      done.fail(`Expected Ok(str), instead got Err(${res.getError()}`);
+    if (result.kind == "err") {
+      done.fail(`Expected Ok(str), instead got Err(${result.getError()}`);
     } else {
-      expect(res.getValue()).toEqual(str);
+      expect(result.getValue()).toEqual(str);
     }
 
     done();
@@ -43,12 +43,12 @@ describe("Primitives", (): void => {
 
   test("string, failed case", (done): void => {
     const notAStr = 5;
-    const res = _.string.decode(notAStr);
+    const result = Decoder.string.decode(notAStr);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(_.getErrorMessage("string", notAStr));
+      expect(result.getError()).toEqual(getErrorMessage("string", notAStr));
     }
 
     done();
@@ -56,12 +56,12 @@ describe("Primitives", (): void => {
 
   test("number", (done): void => {
     const num = 5.32;
-    const res = _.number.decode(num);
+    const result = Decoder.number.decode(num);
 
-    if (res.kind == "err") {
-      done.fail(`Expected Ok(num), instead got Err(${res.getError()}`);
+    if (result.kind == "err") {
+      done.fail(`Expected Ok(num), instead got Err(${result.getError()}`);
     } else {
-      expect(res.getValue()).toEqual(num);
+      expect(result.getValue()).toEqual(num);
     }
 
     done();
@@ -69,12 +69,12 @@ describe("Primitives", (): void => {
 
   test("number, failed case", (done): void => {
     const notANum = "4.3";
-    const res = _.number.decode(notANum);
+    const result = Decoder.number.decode(notANum);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(_.getErrorMessage("number", notANum));
+      expect(result.getError()).toEqual(getErrorMessage("number", notANum));
     }
 
     done();
@@ -82,12 +82,12 @@ describe("Primitives", (): void => {
 
   test("boolean", (done): void => {
     const bool = true;
-    const res = _.boolean.decode(bool);
+    const result = Decoder.boolean.decode(bool);
 
-    if (res.kind == "err") {
-      done.fail(`Expected Ok(bool), instead got Err(${res.getError()}`);
+    if (result.kind == "err") {
+      done.fail(`Expected Ok(bool), instead got Err(${result.getError()}`);
     } else {
-      expect(res.getValue()).toEqual(bool);
+      expect(result.getValue()).toEqual(bool);
     }
 
     done();
@@ -95,12 +95,12 @@ describe("Primitives", (): void => {
 
   test("boolean, failed case", (done): void => {
     const notABool = "true";
-    const res = _.boolean.decode(notABool);
+    const result = Decoder.boolean.decode(notABool);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(_.getErrorMessage("boolean", notABool));
+      expect(result.getError()).toEqual(getErrorMessage("boolean", notABool));
     }
 
     done();
@@ -111,17 +111,17 @@ describe("Array and Record decoder", (): void => {
   test("field success case", (done): void => {
     const obj = { x: 5, y: "4", z: true };
 
-    const res = _.succeed({})
-      .assign("key", _.field("x", _.number))
-      .assign("key2", _.field("y", _.string))
+    const result = Decoder.succeed({})
+      .assign("key", Decoder.field("x", Decoder.number))
+      .assign("key2", Decoder.field("y", Decoder.string))
       .decode(obj);
 
-    if (res.kind === "err") {
+    if (result.kind === "err") {
       done.fail(
-        `Expected Ok({key: 5, key2: "4"}), instead got Err(${res.getError()}`
+        `Expected Ok({key: 5, key2: "4"}), instead got Err(${result.getError()}`
       );
     } else {
-      expect(res.getValue()).toEqual({ key: obj.x, key2: obj.y });
+      expect(result.getValue()).toEqual({ key: obj.x, key2: obj.y });
     }
 
     done();
@@ -130,14 +130,14 @@ describe("Array and Record decoder", (): void => {
   test("wrong field decoder", (done): void => {
     const obj = { x: "5", y: "4" };
 
-    const res = _.succeed({})
-      .assign("key", _.field("x", _.number))
+    const result = Decoder.succeed({})
+      .assign("key", Decoder.field("x", Decoder.number))
       .decode(obj);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(_.getErrorMessage("number", obj.x));
+      expect(result.getError()).toMatch(getErrorMessage("number", obj.x));
     }
 
     done();
@@ -147,16 +147,16 @@ describe("Array and Record decoder", (): void => {
     const obj = { x: "5", y: "4" };
     const msg = "Previous decoder failed";
 
-    const res = _.fail(msg)
-      .assign("key", _.field("x", _.number))
+    const result = Decoder.fail(msg)
+      .assign("key", Decoder.field("x", Decoder.number))
       .decode(obj);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
       return;
     }
 
-    expect(res.getError()).toEqual(msg);
+    expect(result.getError()).toEqual(msg);
 
     done();
   });
@@ -164,12 +164,12 @@ describe("Array and Record decoder", (): void => {
   test("index success case", (done): void => {
     const arr = ["1", true, 5];
 
-    const res = _.index(1, _.boolean).decode(arr);
+    const result = Decoder.index(1, Decoder.boolean).decode(arr);
 
-    if (res.kind === "err") {
-      done.fail(`Expected Ok(true), instead got Err(${res.getError()}`);
+    if (result.kind === "err") {
+      done.fail(`Expected Ok(true), instead got Err(${result.getError()}`);
     } else {
-      expect(res.getValue()).toEqual(true);
+      expect(result.getValue()).toEqual(true);
     }
 
     done();
@@ -178,12 +178,12 @@ describe("Array and Record decoder", (): void => {
   test("array", (done): void => {
     const arr = ["1", "2", "type"];
 
-    const res = _.array(_.string).decode(arr);
+    const result = Decoder.array(Decoder.string).decode(arr);
 
-    if (res.kind === "err") {
-      done.fail(`Expected Ok(${arr}), instead got Err(${res.getError()}`);
+    if (result.kind === "err") {
+      done.fail(`Expected Ok(${arr}), instead got Err(${result.getError()}`);
     } else {
-      expect(res.getValue()).toEqual(arr);
+      expect(result.getValue()).toEqual(arr);
     }
 
     done();
@@ -192,12 +192,12 @@ describe("Array and Record decoder", (): void => {
   test("decode not array with array decoder", (done): void => {
     const notAnArray = { type: "2" };
 
-    const res = _.array(_.string).decode(notAnArray);
+    const result = Decoder.array(Decoder.string).decode(notAnArray);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(_.getErrorMessage("array", notAnArray));
+      expect(result.getError()).toEqual(getErrorMessage("array", notAnArray));
     }
 
     done();
@@ -206,13 +206,13 @@ describe("Array and Record decoder", (): void => {
   test("decode inconsistent array", (done): void => {
     const inconsistentArray = ["1", 2, "type"];
 
-    const res = _.array(_.string).decode(inconsistentArray);
+    const result = Decoder.array(Decoder.string).decode(inconsistentArray);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toEqual(
-        _.getErrorMessage("string", inconsistentArray[1])
+      expect(result.getError()).toEqual(
+        getErrorMessage("string", inconsistentArray[1])
       );
     }
 
@@ -222,17 +222,17 @@ describe("Array and Record decoder", (): void => {
   test("complex record", (done): void => {
     const obj = { x: 5, y: "4", z: { type: ["adv", "7"] } };
 
-    const res = _.succeed({})
-      .assign("key", _.field("x", _.number))
-      .assign("key2", _.at(["z", "type", 0], _.string))
+    const result = Decoder.succeed({})
+      .assign("key", Decoder.field("x", Decoder.number))
+      .assign("key2", Decoder.at(["z", "type", 0], Decoder.string))
       .decode(obj);
 
-    if (res.kind === "err") {
+    if (result.kind === "err") {
       done.fail(
-        `Expected Ok({key: 5, key2: "adv"}), instead got Err(${res.getError()}`
+        `Expected Ok({key: 5, key2: "adv"}), instead got Err(${result.getError()}`
       );
     } else {
-      expect(res.getValue()).toEqual({ key: obj.x, key2: obj.z.type[0] });
+      expect(result.getValue()).toEqual({ key: obj.x, key2: obj.z.type[0] });
     }
 
     done();
@@ -241,15 +241,15 @@ describe("Array and Record decoder", (): void => {
   test("complex record: wrong path", (done): void => {
     const obj = { x: 5, y: "4", z: { type: ["adv", "7"] } };
 
-    const res = _.succeed({})
-      .assign("key", _.field("x", _.number))
-      .assign("key2", _.at(["z", "t", 0], _.string))
+    const result = Decoder.succeed({})
+      .assign("key", Decoder.field("x", Decoder.number))
+      .assign("key2", Decoder.at(["z", "t", 0], Decoder.string))
       .decode(obj);
 
-    if (res.kind === "ok") {
-      done.fail(`Expected Err(msg), instead got Ok(${res.getValue()}`);
+    if (result.kind === "ok") {
+      done.fail(`Expected Err(msg), instead got Ok(${result.getValue()}`);
     } else {
-      expect(res.getError()).toMatch(/Not existed path/);
+      expect(result.getError()).toMatch(/Not existed path/);
     }
 
     done();
