@@ -1,5 +1,7 @@
 # Type-safe elm-style decoder
 
+The library was inspired by [Elm decoders](https://package.elm-lang.org/packages/elm/json/latest/Json-Decode) and [jsonous library](https://github.com/kofno/jsonous).
+
 ## TODOs:
 
 1. Add some decoders: maybe, nullable
