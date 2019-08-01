@@ -88,7 +88,7 @@ export class Decoder<A> {
           .decode(value[fieldName])
           .mapError(
             (e: string): string =>
-              `I found an error in the field named '${name}' of ${stringify(
+              `There is an error in the field [${name}] of ${stringify(
                 value
               )}: ${e}`
           )
